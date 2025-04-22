@@ -36,3 +36,4 @@ async function sendMessage() {
 document.getElementById('userInput').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') sendMessage();
 });
+// test
