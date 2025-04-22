@@ -1,39 +1,36 @@
-async function sendMessage() {
-  const userInput = document.getElementById('userInput');
-  const chatbox = document.getElementById('chatbox');
-  const message = userInput.value.trim();
-  if (message === "") return;
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
 
-  const userMessage = document.createElement('div');
-  userMessage.className = 'message user';
-  userMessage.textContent = message;
-  chatbox.appendChild(userMessage);
-  userInput.value = "";
-
-  const botMessage = document.createElement('div');
-  botMessage.className = 'message bot';
-  botMessage.textContent = "🔄 Αναλύω την ερώτησή σου...";
-  chatbox.appendChild(botMessage);
-  chatbox.scrollTop = chatbox.scrollHeight;
-
+export default async function handler(req, res) {
   try {
-    const response = await fetch("/api/chat", {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Only POST requests allowed" });
+    }
+
+    const { message } = req.body;
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "Είσαι ο AgroBot, βοηθός αγροτών θερμοκηπίου. Απάντησε επαγγελματικά και πρακτικά." },
+          { role: "user", content: message }
+        ]
+      })
     });
 
     const data = await response.json();
-    botMessage.textContent = data.reply;
+    return res.status(200).json({ reply: data.choices[0].message.content });
   } catch (error) {
-    botMessage.textContent = "⚠️ Σφάλμα κατά την επικοινωνία με τον AgroBot.";
-    console.error(error);
+    console.error("OpenAI API Error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
-
-  chatbox.scrollTop = chatbox.scrollHeight;
 }
-
-document.getElementById('userInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') sendMessage();
-});
-// test
