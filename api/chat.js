@@ -1,17 +1,20 @@
-export const config = {
-  api: {
-    bodyParser: true,
-  },
-};
-
 export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Μόνο POST αιτήματα επιτρέπονται.' });
+  }
+
+  let message;
   try {
-    if (req.method !== "POST") {
-      return res.status(405).json({ error: "Only POST requests allowed" });
-    }
+    message = req.body.message;
+  } catch (error) {
+    return res.status(400).json({ error: 'Το σώμα του αιτήματος δεν είναι έγκυρο JSON.' });
+  }
 
-    const { message } = req.body;
+  if (!message) {
+    return res.status(400).json({ error: 'Το πεδίο "message" είναι υποχρεωτικό.' });
+  }
 
+  try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -28,9 +31,13 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
+
+    if (data.error) {
+      return res.status(500).json({ error: data.error.message });
+    }
+
     return res.status(200).json({ reply: data.choices[0].message.content });
   } catch (error) {
-    console.error("OpenAI API Error:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({ error: 'Σφάλμα κατά την επικοινωνία με το OpenAI API.' });
   }
 }
