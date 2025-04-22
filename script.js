@@ -23,7 +23,7 @@ async function sendMessage() {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": "Bearer ΤΟ_API_KEY_ΣΟΥ"
+      "Authorization": "Bearer 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"
     },
     body: JSON.stringify({
       model: "gpt-3.5-turbo",
