@@ -4,13 +4,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Buffer & Parse the body manually (Vercel workaround)
+    // ΜΑΝΙΟΥΑΛ parsing γιατί req.body είναι undefined στο Vercel (Edge Function)
     const buffers = [];
     for await (const chunk of req) {
       buffers.push(chunk);
     }
-    const body = JSON.parse(Buffer.concat(buffers).toString());
-    const { message } = body;
+    const rawBody = Buffer.concat(buffers).toString();
+    const { message } = JSON.parse(rawBody);
 
     const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
         messages: [
           {
             role: "system",
-            content: "Είσαι ο AgroBot, βοηθός αγροτών θερμοκηπίου. Απάντησε επαγγελματικά και πρακτικά."
+            content: "Είσαι ο AgroBot, βοηθός θερμοκηπιακών καλλιεργειών. Απάντησε με πρακτικές και σαφείς συμβουλές."
           },
           {
             role: "user",
@@ -34,10 +34,16 @@ export default async function handler(req, res) {
     });
 
     const data = await openaiRes.json();
+
+    if (data.error) {
+      console.error("OpenAI Error:", data.error);
+      return res.status(500).json({ error: data.error.message });
+    }
+
     return res.status(200).json({ reply: data.choices[0].message.content });
 
-  } catch (err) {
-    console.error("API Error:", err);
-    return res.status(500).json({ error: 'Internal Server Error' });
+  } catch (error) {
+    console.error("Handler Error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 }
